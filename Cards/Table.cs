@@ -33,6 +33,7 @@ public static class Table
         Shuffle(20);
         if (freshDispose[0].Type == CardType.Měňák)
             ChangedColor = freshDispose[0].Color;
+        Log("Karty zamíchané...");
     }
 
     public static bool IsDisposed(CardType type, CardColorType color)
@@ -106,7 +107,6 @@ public static class Table
         CardColorType cardColor = GetFirstDisposed().Color;
         if (Changing)
             cardColor = ChangedColor;
-        Changing = false;
         if (c.Type == CardType.Měňák)
         {
             string message = $"Zahrál jsi {c} a změnil na ";
@@ -145,30 +145,31 @@ public static class Table
                     freshDispose.Add(c);
                     Console.WriteLine($"Zahrál jsi {c}");
                     Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c}");
+                    Changing = false;
                     return new PlayCardResponse(true);
                 case CardType.Sedmička:
                     freshDispose.Add(c);
                     Console.WriteLine($"Zahrál jsi {c}");
                     Multiplier += 2;
                     Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c} a zvýšil MULTIPLIER na {Multiplier}x");
+                    Changing = false;
                     return new PlayCardResponse(true, State.Taking);
                 case CardType.Eso:
                     freshDispose.Add(c);
                     Console.WriteLine($"Zahrál jsi {c}");
                     Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c}");
+                    Changing = false;
                     return new PlayCardResponse(true, State.Stopped);
             }
         }
         else if (c.Color != cardColor)
         {
             //TODO: Switch with different errors
-            Log($"{Cards.Program.GetCurrentPlayer().Username} Nemůže zahrát {c.Color} na {cardColor}!");
             return new PlayCardResponse(false, $"Nemůžeš zahrát {c.Color} na {cardColor}!");
         }
         else
         {
             //TODO: Switch with different errors
-            Log($"{Cards.Program.GetCurrentPlayer().Username} Nemůže zahrát {c.Type} na {GetFirstDisposed().Type}!");
             return new PlayCardResponse(false, $"Nemůžeš zahrát {c.Type} na {GetFirstDisposed().Type}!");
         }
     }
@@ -203,7 +204,8 @@ public static class Table
 
     public static void Log(string message)
     {
-        messages.Add(message);
+        if(Settings.CanLog)
+            messages.Add(message);
     }
 }
 

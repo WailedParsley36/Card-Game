@@ -35,8 +35,6 @@ namespace Cards
                     case 1:
                         if (RunGame())
                             Environment.Exit(0x0);
-                        else
-                            RunGame();
                         break;
                     case 2:
                         bool logs = false;
@@ -63,7 +61,7 @@ namespace Cards
                                     break;
                                 default:
                                     Console.Clear();
-                                    foreach(string ctn in aLogs[choice - 2].Content)
+                                    foreach (string ctn in aLogs[choice - 2].Content)
                                     {
                                         Console.WriteLine(ctn);
                                     }
@@ -127,6 +125,8 @@ namespace Cards
 
         private static bool RunGame()
         {
+            End = false;
+            currentPlayer = 0;
             Console.Clear();
             //TODO: Difficulty
             Console.Write("Hrajeme!\nNapiš počet hráčů: ");
@@ -154,6 +154,7 @@ namespace Cards
                 players[i] = new Player(Console.ReadLine());
             }
             Console.WriteLine("Rozdávám karty...");
+            Table.Log("Rozdávání karet...");
             if (Settings.CanLog)
             {
                 string playerNames = String.Empty;
@@ -175,11 +176,13 @@ namespace Cards
                 else
                     currentPlayer = 0;
             }
-            Console.WriteLine($"Hráč {players[currentPlayer].Username} vyhrál!");
+            Console.Clear();
+            Table.Log($"\nHráč {players[currentPlayer].Username} vyhrál!");
+            Console.WriteLine($"Hráč {players[currentPlayer].Username} vyhrál!\n");
             Console.WriteLine("Chcete si uložit záznam o hře?\n1. Ano\n2. Ne");
             if (GetUserIntInRange(1, 2) == 1)
                 Settings.SaveLog(players);
-            Console.WriteLine("Chcete si zahrát znovu?\n1. Ano\n2. Ne");
+            Console.WriteLine("\nZpátky do menu?\n1. Ano\n2. Ne");
             if (GetUserIntInRange(1, 2) == 1)
                 return false;
             else
@@ -198,6 +201,7 @@ namespace Cards
             Console.WriteLine($"Hráč {players[index].Username} je na tahu\nPro začátek tvého tahu zmáčkni cokoli...");
             Console.ReadKey();
             Console.Clear();
+            Table.Log($"\nHRAJE HRÁČ {players[index].Username}");
             int nextPlayer = index + 1;
             int previousPlayer = index - 1;
             if (index - 1 < 0)
@@ -213,10 +217,12 @@ namespace Cards
                 case State.Normal:
                     break;
                 case State.Stopped:
+                    Table.Log($"Hráč {players[previousPlayer].Username} použil na {players[index].Username} Eso");
                     Console.WriteLine($"HRÁČ {players[previousPlayer].Username} NA VÁS POUŽIL ESO!");
                     Thread.Sleep(2000);
                     break;
                 case State.Taking:
+                    Table.Log($"Hráč {players[previousPlayer].Username} použil na {players[index].Username} Sedmičku");
                     Console.WriteLine($"HRÁČ {players[previousPlayer].Username} NA VÁS POUŽIL SEDMU!");
                     Thread.Sleep(2000);
                     break;
@@ -224,6 +230,7 @@ namespace Cards
             if (Table.Multiplier != 0)
             {
                 Console.WriteLine($"MOMENTÁLNÍ NÁSOBIČ KARET ZE ZAHRANÝCH SEDMIČEK: {Table.Multiplier}x\n");
+                Table.Log($"Momentální násobič karet ze zahraných sedmiček: {Table.Multiplier}x\n");
             }
             Console.WriteLine($"ZBÝVÁ {Table.RemainingCards()} | ZAHRÁNO {Table.ThrowedCards()} | ODHAZOVACÍ BALÍK: {Table.GetFirstDisposed()}\n");
             if (Table.Changing)
@@ -232,15 +239,19 @@ namespace Cards
                 {
                     case CardColorType.Kule:
                         Console.WriteLine($"\u001b[34mZMĚNĚNO NA {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
+                        Table.Log($"\u001b[34mZměněno na: {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
                         break;
                     case CardColorType.Srdce:
                         Console.WriteLine($"\u001b[31mZMĚNĚNO NA {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
+                        Table.Log($"\u001b[31mZměněno na: {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
                         break;
                     case CardColorType.Žaludy:
                         Console.WriteLine($"\u001b[33mZMĚNĚNO NA {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
+                        Table.Log($"\u001b[33mZměněno na: {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
                         break;
                     case CardColorType.Zelí:
                         Console.WriteLine($"\u001b[32mZMĚNĚNO NA {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
+                        Table.Log($"\u001b[32mZměněno na: {Table.ChangedColor.ToString().ToUpper()}\u001b[0m");
                         break;
                 }
                 Thread.Sleep(2000);
@@ -254,11 +265,14 @@ namespace Cards
                 Console.WriteLine("0. STÁT");
             Console.WriteLine("TVÉ KARTY: ");
             int count = 1;
+            string cardsString = "";
             foreach (Card c in players[index].Hand)
             {
                 Console.WriteLine($"{count}. {c}");
+                cardsString += $"{count}. {c}\n";
                 count++;
             }
+            Table.Log($"Karty hráče {players[index].Username}:\n{cardsString}");
             Console.WriteLine();
             bool goodToProceed = false;
             if (players[index].CurrentState == State.Stopped)
@@ -280,6 +294,7 @@ namespace Cards
                     foreach (Card c in Table.TakeCards(Table.Multiplier))
                     {
                         Console.WriteLine($"Líznul jste si {c}");
+                        Table.Log($"Hráč {players[index].Username} si líznul {c}");
                         players[index].Hand.Add(c);
                     }
                 }
@@ -294,13 +309,18 @@ namespace Cards
                     {
                         Card[] c;
                         if (Table.Multiplier == 0)
+                        {
                             c = Table.TakeCards(1);
+                        }
                         else
+                        {
                             c = Table.TakeCards(Table.Multiplier);
+                        }
                         Console.WriteLine();
                         foreach (Card cc in c)
                         {
                             Console.WriteLine($"Líznul jste si {cc}");
+                            Table.Log($"Hráč {players[index].Username} si líznul {cc}");
                             players[index].Hand.Add(cc);
                         }
                         good = true;
@@ -308,6 +328,7 @@ namespace Cards
                     else if (players[index].CurrentState == State.Stopped && position == 0)
                     {
                         Console.WriteLine("Stojíte...");
+                        Table.Log($"Hráč {players[index].Username} stojí na Eso");
                         players[index].CurrentState = State.Normal;
                         good = true;
                     }

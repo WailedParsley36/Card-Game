@@ -75,16 +75,18 @@ static class Settings
         if (!Directory.Exists(LogPath))
             Directory.CreateDirectory(LogPath);
         string message = "";
+        string path = LogPath;
         foreach(string str in Table.messages)
         {
-            message += Table.messages + "\n";
+            message += str + "\n";
         }
-        for(int i = 0; i < playerr.Length -2; i++)
+        foreach (Player p in playerr)
         {
-            LogPath += playerr[i].Username + ".vs.";
+            path += p.Username + "vs";
         }
-        LogPath += playerr[playerr.Length - 1].Username + ".txt";
-        File.WriteAllText(LogPath, message);
+        path = path.Remove(path.Length-2);
+        path += ".cGame";
+        File.WriteAllText(path, message);
     }
 
     public static LoadedLog[] LoadLogs()
