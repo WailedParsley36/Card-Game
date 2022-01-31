@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public static class Table
 {
-    private static List<string> messages = new List<string>();
+    public static List<string> messages = new List<string>();
     private static List<Card> all = new List<Card>();
     private static List<Card> disposed = new List<Card>();
     private static List<Card> freshDispose = new List<Card>();
@@ -98,6 +98,7 @@ public static class Table
         }
         freshDispose.Clear();
         freshDispose.Add(temp);
+        Log("Balíček byl otočen.");
     }
 
     public static PlayCardResponse PlayCard(Card c)
@@ -109,21 +110,27 @@ public static class Table
         if (c.Type == CardType.Měňák)
         {
             string message = $"Zahrál jsi {c} a změnil na ";
+            string added = "";
             switch (c.ChangerColor)
             {
                 case CardColorType.Srdce:
                     message += "\u001b[31mSrdce\u001b[0m ";
+                    added = "\u001b[31mSrdce\u001b[0m ";
                     break;
                 case CardColorType.Kule:
                     message += "\u001b[34mKule\u001b[0m ";
+                    added = "\u001b[34mKule\u001b[0m ";
                     break;
                 case CardColorType.Žaludy:
                     message += "\u001b[33mŽaludy\u001b[0m ";
+                    added = "\u001b[33mŽaludy\u001b[0m ";
                     break;
                 case CardColorType.Zelí:
                     message += "\u001b[32mZelí\u001b[0m ";
+                    added = "\u001b[32mZelí\u001b[0m ";
                     break;
             }
+            Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c} a změnil na " + added);
             Console.WriteLine(message);
             Changing = true;
             ChangedColor = c.ChangerColor;
@@ -137,26 +144,31 @@ public static class Table
                 default:
                     freshDispose.Add(c);
                     Console.WriteLine($"Zahrál jsi {c}");
+                    Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c}");
                     return new PlayCardResponse(true);
                 case CardType.Sedmička:
                     freshDispose.Add(c);
                     Console.WriteLine($"Zahrál jsi {c}");
                     Multiplier += 2;
+                    Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c} a zvýšil MULTIPLIER na {Multiplier}x");
                     return new PlayCardResponse(true, State.Taking);
                 case CardType.Eso:
                     freshDispose.Add(c);
                     Console.WriteLine($"Zahrál jsi {c}");
+                    Log($"{Cards.Program.GetCurrentPlayer().Username} Zahrál {c}");
                     return new PlayCardResponse(true, State.Stopped);
             }
         }
         else if (c.Color != cardColor)
         {
             //TODO: Switch with different errors
+            Log($"{Cards.Program.GetCurrentPlayer().Username} Nemůže zahrát {c.Color} na {cardColor}!");
             return new PlayCardResponse(false, $"Nemůžeš zahrát {c.Color} na {cardColor}!");
         }
         else
         {
             //TODO: Switch with different errors
+            Log($"{Cards.Program.GetCurrentPlayer().Username} Nemůže zahrát {c.Type} na {GetFirstDisposed().Type}!");
             return new PlayCardResponse(false, $"Nemůžeš zahrát {c.Type} na {GetFirstDisposed().Type}!");
         }
     }

@@ -1,8 +1,7 @@
 ﻿//R.I.P C++ macros
 using System;
 using System.Threading;
-using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 
 namespace Cards
 {
@@ -13,52 +12,115 @@ namespace Cards
         private static int playerCount = 2;
         private static Player[] players;
         private static bool End = false;
-        private static Settings settings = new Settings();
+        private static int currentPlayer;
+
+        public static Player GetCurrentPlayer()
+        {
+            return players[currentPlayer];
+        }
 
         static void Main(string[] args)
         {
+            Settings.Init();
             Table.Init();
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("Vítej v Prší Master!\n1. Hrát\n2. Záznamy her");
-                if (GetUserIntInRange(1, 2) == 2)
+                Console.WriteLine("Vítej v Prší Master!\n0. Ukončit\n1. Hrát\n2. Záznamy\n3. Nastavení");
+                switch (GetUserIntInRange(0, 3))
                 {
-                    bool satisfied = false;
-                    while (!satisfied)
-                    {
-                        Console.WriteLine("\n0. Back\n1. Záznamy\n2. Upravit cestu k záznamům");
-                        Console.WriteLine();
-                        switch (GetUserIntInRange(0, 2))
-                        {
-                            case 0:
-                                satisfied = true;
-                                break;
-                            case 1:
-                                Console.WriteLine($"0. Back\n1. Vypnout záznamy = {settings.CanLog}\n2. Upravit cestu k záznamům = {settings.LogPath}");
-                                switch(GetUserIntInRange(1, 2))
-                                {
-                                    case 0:
-                                        satisfied = true;
-                                        break;
-                                    case 1:
-                                        break;
-                                    case 2:
-                                        break;
-                                }
-                                break;
-                            case 2:
-                                Console.Clear();
-                                break;
-                        }
-                    }
-                }
-                else
-                {
-                    if (RunGame())
+                    case 0:
                         Environment.Exit(0x0);
-                    else
-                        RunGame();
+                        break;
+                    case 1:
+                        if (RunGame())
+                            Environment.Exit(0x0);
+                        else
+                            RunGame();
+                        break;
+                    case 2:
+                        bool logs = false;
+                        while (!logs)
+                        {
+                            Console.Clear();
+                            Console.Write("0. Back\n1. Otevřít cestu\n");
+                            int choice = 2;
+                            LoadedLog[] aLogs = Settings.LoadLogs();
+                            foreach (LoadedLog log in aLogs)
+                            {
+                                Console.Write($"{choice}. {log.Name}-záznam\n");
+                                choice++;
+                            }
+                            Console.WriteLine();
+                            choice = GetUserIntInRange(0, choice);
+                            switch (choice)
+                            {
+                                case 0:
+                                    logs = true;
+                                    break;
+                                case 1:
+                                    System.Diagnostics.Process.Start("explorer.exe", @$"{Settings.LogPath}");
+                                    break;
+                                default:
+                                    Console.Clear();
+                                    foreach(string ctn in aLogs[choice - 2].Content)
+                                    {
+                                        Console.WriteLine(ctn);
+                                    }
+                                    Console.WriteLine("\nKONEC ZÁZNAMU...");
+                                    Console.ReadKey();
+                                    break;
+                            }
+                        }
+                        break;
+                    case 3:
+                        Settings.LoadSettings();
+                        bool settings = false;
+                        while (!settings)
+                        {
+                            Console.Clear();
+                            Console.WriteLine("0. Back\n1. Záznamy\n2. Resetovat\n");
+                            switch (GetUserIntInRange(0, 2))
+                            {
+                                case 0:
+                                    settings = true;
+                                    break;
+                                case 1:
+                                    bool logging = false;
+                                    while (!logging)
+                                    {
+                                        Console.Clear();
+                                        Console.WriteLine($"0. Back\n1. Vypnout záznamy = {Settings.CanLog}\n2. Upravit cestu k záznamům = {Settings.LogPath}\n");
+                                        switch (GetUserIntInRange(0, 2))
+                                        {
+                                            case 0:
+                                                logging = true;
+                                                break;
+                                            case 1:
+                                                Settings.CanLog = !Settings.CanLog;
+                                                Console.SetCursorPosition("1. Vypnout záznamy = ".Length, 1);
+                                                Console.Write(Settings.CanLog);
+                                                Console.SetCursorPosition(0, 3);
+                                                Settings.SaveSettings();
+                                                break;
+                                            case 2:
+                                                Console.Write("Napiš cestu: ");
+                                                Settings.LogPath = Console.ReadLine();
+                                                Console.SetCursorPosition("2. Upravit cestu k záznamům = ".Length, 2);
+                                                Console.Write(Settings.LogPath);
+                                                Console.SetCursorPosition(0, 3);
+                                                Settings.SaveSettings();
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                case 2:
+                                    Settings.Reset();
+                                    Thread.Sleep(1000);
+                                    break;
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -92,17 +154,17 @@ namespace Cards
                 players[i] = new Player(Console.ReadLine());
             }
             Console.WriteLine("Rozdávám karty...");
-            if (settings.CanLog)
+            if (Settings.CanLog)
             {
                 string playerNames = String.Empty;
-                foreach(Player p in players)
+                foreach (Player p in players)
                 {
                     playerNames += p.Username + " ";
                 }
                 Table.Log($"Hra začala s {playerCount} hráči: {playerNames}");
             }
             Random r = new Random();
-            int currentPlayer = r.Next(0, playerCount);
+            currentPlayer = r.Next(0, playerCount);
             while (!End)
             {
                 PlayerTurn(currentPlayer);
@@ -116,7 +178,7 @@ namespace Cards
             Console.WriteLine($"Hráč {players[currentPlayer].Username} vyhrál!");
             Console.WriteLine("Chcete si uložit záznam o hře?\n1. Ano\n2. Ne");
             if (GetUserIntInRange(1, 2) == 1)
-                SaveLog();
+                Settings.SaveLog(players);
             Console.WriteLine("Chcete si zahrát znovu?\n1. Ano\n2. Ne");
             if (GetUserIntInRange(1, 2) == 1)
                 return false;
@@ -314,10 +376,6 @@ namespace Cards
                 Console.WriteLine($"Zadané číslo je neplatné zkus to znovu {min}-{max}: ");
             }
             return choice;
-        }
-        private static void SaveLog()
-        {
-
         }
     }
 }
