@@ -88,7 +88,7 @@ namespace Cards
                                     while (!logging)
                                     {
                                         Console.Clear();
-                                        Console.WriteLine($"0. Back\n1. Vypnout záznamy = {Settings.CanLog}\n2. Upravit cestu k záznamům = {Settings.LogPath}\n");
+                                        Console.WriteLine($"0. Back\n1. Záznamy povoleny = {Settings.CanLog}\n2. Upravit cestu k záznamům = {Settings.LogPath}\n");
                                         switch (GetUserIntInRange(0, 2))
                                         {
                                             case 0:
@@ -178,10 +178,13 @@ namespace Cards
             }
             Console.Clear();
             Table.Log($"\nHráč {players[currentPlayer].Username} vyhrál!");
-            Console.WriteLine($"Hráč {players[currentPlayer].Username} vyhrál!\n");
-            Console.WriteLine("Chcete si uložit záznam o hře?\n1. Ano\n2. Ne");
-            if (GetUserIntInRange(1, 2) == 1)
-                Settings.SaveLog(players);
+            Console.WriteLine($"Hráč {players[currentPlayer].Username} vyhrál!");
+            if (Settings.CanLog)
+            {
+                Console.WriteLine("\nChcete si uložit záznam o hře?\n1. Ano\n2. Ne");
+                if (GetUserIntInRange(1, 2) == 1)
+                    Settings.SaveLog(players);
+            }
             Console.WriteLine("\nZpátky do menu?\n1. Ano\n2. Ne");
             if (GetUserIntInRange(1, 2) == 1)
                 return false;
